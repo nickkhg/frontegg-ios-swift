@@ -59,15 +59,16 @@ public class FronteggApp {
                 isRegional: false,
                 regionData: self.regionData,
                 embeddedMode: self.embeddedMode,
-                isLateInit: true
+                isLateInit: true,
+                automaticTokenRefresh: config.automaticTokenRefresh
             )
             return
         }
 
         switch config.payload {
-        case let .multiRegion(config):
+        case let .multiRegion(payload):
             logger.info("Regional frontegg initialization")
-            self.regionData = config.regions
+            self.regionData = payload.regions
 
             self.auth = FronteggAuth(
                 baseUrl: self.baseUrl,
@@ -76,16 +77,17 @@ public class FronteggApp {
                 credentialManager: self.credentialManager,
                 isRegional: true,
                 regionData: self.regionData,
-                embeddedMode: self.embeddedMode
+                embeddedMode: self.embeddedMode,
+                automaticTokenRefresh: config.automaticTokenRefresh
             )
 
-            if let config = self.auth.selectedRegion {
-                self.baseUrl = config.baseUrl
-                self.clientId = config.clientId
-                self.applicationId = config.applicationId
-                self.auth.reinitWithRegion(config: config)
+            if let payload = self.auth.selectedRegion {
+                self.baseUrl = payload.baseUrl
+                self.clientId = payload.clientId
+                self.applicationId = payload.applicationId
+                self.auth.reinitWithRegion(config: payload)
 
-                logger.info("Frontegg Initialized succcessfully (region: \(config.key))")
+                logger.info("Frontegg Initialized succcessfully (region: \(payload.key))")
                 return;
             } else {
                 // skip automatic authorize for regional config
@@ -94,12 +96,12 @@ public class FronteggApp {
                 self.auth.showLoader = false
             }
 
-        case let .singleRegion(config):
+        case let .singleRegion(payload):
             logger.info("Standard frontegg initialization")
 
-            self.baseUrl = config.baseUrl
-            self.clientId = config.clientId
-            self.applicationId = config.applicationId
+            self.baseUrl = payload.baseUrl
+            self.clientId = payload.clientId
+            self.applicationId = payload.applicationId
 
             self.auth = FronteggAuth(
                 baseUrl: self.baseUrl,
@@ -108,7 +110,8 @@ public class FronteggApp {
                 credentialManager: self.credentialManager,
                 isRegional: false,
                 regionData: [],
-                embeddedMode: self.embeddedMode
+                embeddedMode: self.embeddedMode,
+                automaticTokenRefresh: config.automaticTokenRefresh
             )
 
             logger.info("Frontegg Initialized succcessfully")
@@ -124,7 +127,8 @@ public class FronteggApp {
             cliendId: String,
             applicationId: String? = nil,
             handleLoginWithSocialLogin: Bool = true,
-            handleLoginWithSSO:Bool = false
+            handleLoginWithSSO: Bool = false,
+            automaticTokenRefresh: Bool = true
     ) {
         self.baseUrl = baseUrl
         self.clientId = cliendId
@@ -133,7 +137,12 @@ public class FronteggApp {
         self.handleLoginWithSocialLogin = handleLoginWithSocialLogin
         self.handleLoginWithSSO = handleLoginWithSSO
         
-        self.auth.manualInit(baseUrl: baseUrl, clientId: cliendId, applicationId: applicationId)
+        self.auth.manualInit(
+            baseUrl: baseUrl,
+            clientId: cliendId,
+            applicationId: applicationId,
+            automaticTokenRefresh: automaticTokenRefresh
+        )
     }
     public func manualInitRegions(
         regions: [RegionConfig],

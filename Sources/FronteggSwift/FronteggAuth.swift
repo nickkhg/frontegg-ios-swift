@@ -27,6 +27,7 @@ public class FronteggAuth: ObservableObject {
     @Published public var webLoading = true
     @Published public var initializing = true
     @Published public var lateInit = false
+    @Published public var automaticTokenRefresh = true
     @Published public var showLoader = true
     @Published public var appLink: Bool = false
     @Published public var externalLink: Bool = false
@@ -54,19 +55,23 @@ public class FronteggAuth: ObservableObject {
     
     var webAuthentication: WebAuthentication = WebAuthentication()
     
-    init (baseUrl:String,
-          clientId: String,
-          applicationId: String?,
-          credentialManager: CredentialManager,
-          isRegional: Bool,
-          regionData: [RegionConfig],
-          embeddedMode: Bool,
-          isLateInit: Bool? = false) {
+    init(
+        baseUrl:String,
+        clientId: String,
+        applicationId: String?,
+        credentialManager: CredentialManager,
+        isRegional: Bool,
+        regionData: [RegionConfig],
+        embeddedMode: Bool,
+        isLateInit: Bool? = false,
+        automaticTokenRefresh: Bool = true
+    ) {
         self.isRegional = isRegional
         self.regionData = regionData
         self.lateInit = isLateInit ?? false
+        self.automaticTokenRefresh = automaticTokenRefresh
         self.credentialManager = credentialManager
-        
+
         self.embeddedMode = embeddedMode
         self.baseUrl = baseUrl
         self.clientId = clientId
@@ -106,12 +111,13 @@ public class FronteggAuth: ObservableObject {
     }
     
     
-    public func manualInit(baseUrl:String, clientId:String, applicationId: String?) {
+    public func manualInit(baseUrl:String, clientId:String, applicationId: String?, automaticTokenRefresh: Bool = true) {
         self.lateInit = false
         self.baseUrl = baseUrl
         self.clientId = clientId
         self.applicationId = applicationId
         self.isRegional = false
+        self.automaticTokenRefresh = automaticTokenRefresh
         self.api = Api(baseUrl: self.baseUrl, clientId: self.clientId, applicationId: self.applicationId)
         self.initializeSubscriptions()
     }
@@ -222,11 +228,11 @@ public class FronteggAuth: ObservableObject {
                 // isLoading must be at the bottom
                 self.isLoading = false
                 
-                
+
                 let offset = calculateOffset(expirationTime: decode["exp"] as! Int)
-                
+
                 scheduleTokenRefresh(offset: offset)
-                
+
             }
         } catch {
             logger.error("Failed to load user data, \(error)")
@@ -258,6 +264,12 @@ public class FronteggAuth: ObservableObject {
     }
     
     func refreshTokenWhenNeeded() {
+
+        guard automaticTokenRefresh else {
+            logger.info("Automatic token refresh disabled. Skipping refresh...")
+            return
+        }
+
         do {
             logger.info("Checking if refresh token is available...")
             
@@ -309,6 +321,10 @@ public class FronteggAuth: ObservableObject {
     
     
     func scheduleTokenRefresh(offset: TimeInterval) {
+        guard automaticTokenRefresh else {
+            logger.info("Automatic token refresh disabled. Not scheduling...")
+            return
+        }
         cancelScheduledTokenRefresh()
         logger.info("Schedule token refresh after, (\(offset) s)")
         
@@ -366,9 +382,11 @@ public class FronteggAuth: ObservableObject {
     public func refreshTokenIfNeeded() async -> Bool {
         
         guard await NetworkStatusMonitor.isActive else {
-            self.logger.info("Refresh rescheduled due to inactive internet")
+            if automaticTokenRefresh {
+                self.logger.info("Refresh rescheduled due to inactive internet")
 
-            scheduleTokenRefresh(offset: 10)
+                scheduleTokenRefresh(offset: 10)
+            }
             return false
         }
 

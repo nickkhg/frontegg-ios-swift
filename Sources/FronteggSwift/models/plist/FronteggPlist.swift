@@ -17,6 +17,7 @@ struct FronteggPlist: Decodable, Equatable {
     let loginWithSocialLogin: Bool
     let loginWithSSO: Bool
     let lateInit: Bool
+    let automaticTokenRefresh: Bool
     let logLevel: LogLevel
     let payload: Payload
 
@@ -26,6 +27,7 @@ struct FronteggPlist: Decodable, Equatable {
         case loginWithSocialLogin
         case loginWithSSO
         case lateInit
+        case automaticTokenRefresh
         case logLevel
     }
 
@@ -35,6 +37,7 @@ struct FronteggPlist: Decodable, Equatable {
         loginWithSocialLogin: Bool = true,
         loginWithSSO: Bool = false,
         lateInit: Bool = false,
+        automaticTokenRefresh: Bool = true,
         logLevel: LogLevel = .warn,
         payload: Payload
     ) {
@@ -43,6 +46,7 @@ struct FronteggPlist: Decodable, Equatable {
         self.loginWithSocialLogin = loginWithSocialLogin
         self.loginWithSSO = loginWithSSO
         self.lateInit = lateInit
+        self.automaticTokenRefresh = automaticTokenRefresh
         self.logLevel = logLevel
         self.payload = payload
     }
@@ -64,6 +68,9 @@ struct FronteggPlist: Decodable, Equatable {
 
         let lateInit = try container.decodeIfPresent(Bool.self, forKey: .lateInit)
         self.lateInit = lateInit ?? false
+
+        let automaticTokenRefresh = try container.decodeIfPresent(Bool.self, forKey: .automaticTokenRefresh)
+        self.automaticTokenRefresh = automaticTokenRefresh ?? true
 
         let logLevel = try container.decodeIfPresent(LogLevel.self, forKey: .logLevel)
         self.logLevel = logLevel ?? .warn
