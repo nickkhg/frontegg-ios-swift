@@ -68,9 +68,7 @@ public class AuthorizeUrlGenerator {
             queryParams.append(
                 URLQueryItem(
                     name: "login_hint",
-                    value: loginHint.addingPercentEncoding(
-                        withAllowedCharacters: .urlQueryAllowed.subtracting(.init(charactersIn: "+")) // Ensure plus addressing is encoded
-                    )
+                    value: loginHint
                 )
             )
         }
@@ -98,7 +96,12 @@ public class AuthorizeUrlGenerator {
 
             loginUrl.path = "/oauth/logout"
             loginUrl.queryItems = [
-                URLQueryItem(name: "post_logout_redirect_uri", value: url.absoluteString),
+                URLQueryItem(
+                    name: "post_logout_redirect_uri",
+                    value: url.absoluteString.addingPercentEncoding(
+                        withAllowedCharacters: .urlQueryAllowed.subtracting(.init(charactersIn: "+")) // Ensure plus addressing is correctly encoded
+                    )
+                ),
             ]
             return (loginUrl.url!, codeVerifier)
         } else {
