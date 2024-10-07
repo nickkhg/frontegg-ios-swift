@@ -64,8 +64,15 @@ public class AuthorizeUrlGenerator {
             URLQueryItem(name: "nonce", value: nonce),
             URLQueryItem(name: "prompt", value: "login"),
         ]
-        if(loginHint != nil){
-            queryParams.append(URLQueryItem(name: "login_hint", value: loginHint))
+        if let loginHint {
+            queryParams.append(
+                URLQueryItem(
+                    name: "login_hint",
+                    value: loginHint.addingPercentEncoding(
+                        withAllowedCharacters: .urlQueryAllowed.subtracting(.init(charactersIn: "+")) // Ensure plus addressing is encoded
+                    )
+                )
+            )
         }
         
         if(loginAction != nil){
